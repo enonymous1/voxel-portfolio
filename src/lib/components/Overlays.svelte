@@ -53,7 +53,7 @@
           <p>CS graduate and builder of data-heavy Python systems: quant pipelines, API auditors, backup tooling, and market-making research — always pre-registered, gauntlet-tested, and honestly reported.</p>
           <h3>Focus</h3>
           <ul><li>High-frequency data pipelines &amp; validation (purged CV, DSR)</li><li>Google / GitHub / Kalshi API tooling</li><li>Flask dashboards, SQLite, Parquet</li></ul>
-          <p><a href="/resume.pdf">Download résumé (PDF)</a> · <a href="https://whenwhere.biz" target="_blank" rel="noopener">WhenWhere.biz</a></p>
+          <p><a href="https://www.linkedin.com/in/justinplyons/" target="_blank" rel="noopener">Résumé on LinkedIn</a> · <a href="https://whenwhere.biz" target="_blank" rel="noopener">WhenWhere.biz</a></p>
         {:else if portfolioState.activePanel === 'project'}
           {#if project}
             <p>{project.blurb}</p>

@@ -59,8 +59,7 @@ const workers = existsSync(join(build, '_app/immutable/workers'))
 ok(workers.some((f) => f.startsWith('chunkWorker')), 'chunkWorker emitted', workers.join(', '));
 ok(workers.some((f) => f.startsWith('galleryWorker')), 'galleryWorker emitted');
 
-// 7. Content warning (owner's file, not a code failure)
-warn(existsSync(join(build, 'resume.pdf')), 'build/resume.pdf missing — resume drawer link will 404 until static/resume.pdf is added (see DEPLOY.md)');
+// (Résumé links to LinkedIn now — no static/resume.pdf to check for.)
 
 console.log(`\npreflight: ${fails} failure(s), ${warns} warning(s)`);
 process.exit(fails ? 1 : 0);

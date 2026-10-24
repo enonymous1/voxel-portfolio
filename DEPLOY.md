@@ -6,7 +6,7 @@ Deploy = put the `build/` directory on any static host. No server, no env vars.
 ## Pre-launch checklist
 
 ### Content (your side — code can't fix these)
-- [ ] **Add `static/resume.pdf`.** The resume drawer links to `/resume.pdf` and the file does not exist yet — without it the link serves the SPA fallback page instead of a PDF. Rebuild after adding it.
+- [x] **Résumé links to LinkedIn** (https://www.linkedin.com/in/justinplyons/) instead of a PDF — no `static/resume.pdf` needed for now. If you later want a PDF, add it to `static/` and repoint the link in `Overlays.svelte`.
 - [x] GitHub URL in `src/lib/content/portfolio.ts` (`externalLinks`) now points at github.com/enonymous1 (fixed in the publish prep).
 - [ ] Proof the panel copy in `src/lib/content/portfolio.ts` and the resume text in `Overlays.svelte`.
 
@@ -23,7 +23,7 @@ Deploy = put the `build/` directory on any static host. No server, no env vars.
 ### Hosting requirements (the easy-to-miss ones)
 - [ ] **HTTPS.** Pointer Lock (desktop mouse-look) only works in a secure context — on plain HTTP it silently does nothing and the site feels broken. Every host below gives HTTPS by default; a self-hosted HTTP deploy is the trap.
 - [ ] **SPA fallback:** unknown paths must serve `index.html`. Configs shipped for Netlify / Cloudflare Pages (`static/_redirects`, copied into `build/` automatically), Vercel (`deploy/vercel.json`), and nginx (`deploy/nginx-voxel-portfolio.conf`). GitHub Pages: run `cp build/index.html build/404.html` after each build.
-- [ ] **Root of a domain, not a subpath** — unless you fix paths first. Model URLs (`/models/*.glb`) and `/resume.pdf` are absolute. For a subpath deploy (e.g. GitHub Pages project site at `user.github.io/repo/`), set `paths.base` in `svelte.config.js` AND prefix the model paths in `portfolio.ts` with the base, or the gallery silently keeps its placeholder boxes.
+- [ ] **Root of a domain, not a subpath** — unless you fix paths first. Model URLs (`/models/*.glb`) are absolute (the résumé link is external now, so it is unaffected). For a subpath deploy (e.g. GitHub Pages project site at `user.github.io/repo/`), set `paths.base` in `svelte.config.js` AND prefix the model paths in `portfolio.ts` with the base, or the gallery silently keeps its placeholder boxes.
 - [ ] **GLB files must serve as files, not fallback HTML.** After deploying: `curl -sI https://YOURSITE/models/dice.glb` — expect `200` and a size of **3648 bytes** (printer 4148, rack 4648). If you get an HTML document instead, your fallback rule is swallowing `/models/*` — the gallery worker will fail to parse it and the (working) placeholders stay forever, which looks fine and is wrong.
 - [ ] Cache headers: shipped in `static/_headers` (Netlify / Cloudflare Pages read it from the output dir): `/_app/immutable/*` = 1 year immutable (they're content-hashed — this is safe and the big perf win), `/models/*` = 1 week, everything else gets basic security headers. On Vercel/nginx, mirror them from the shipped configs. Other hosts ignore the file harmlessly.
 - [ ] Optional CSP: not shipped enabled, because an unverified CSP can break WebGL/workers. If you add one, start from:
@@ -43,4 +43,4 @@ Deploy = put the `build/` directory on any static host. No server, no env vars.
 Keep the previous `build/` (or its zip). Hashed assets mean the release is effectively `index.html` + new chunks — redeploying the old output restores the old site atomically on every host above.
 
 ## What `npm run preflight` checks
-`scripts/preflight.mjs` inspects `build/` and fails loudly if: index.html is missing, any `_app` chunk referenced by index.html is missing on disk, a model GLB is missing / wrong size vs `static/` / lacks the `glTF` magic bytes, `models-src/` leaked into the output (it did once — that's why this exists), `_redirects`/`_headers` weren't copied, or the preloaded JS/CSS exceeds the 275 KB gz regression ceiling. It warns (doesn't fail) on the missing `resume.pdf`.
+`scripts/preflight.mjs` inspects `build/` and fails loudly if: index.html is missing, any `_app` chunk referenced by index.html is missing on disk, a model GLB is missing / wrong size vs `static/` / lacks the `glTF` magic bytes, `models-src/` leaked into the output (it did once — that's why this exists), `_redirects`/`_headers` weren't copied, or the preloaded JS/CSS exceeds the 275 KB gz regression ceiling. The old missing-`resume.pdf` warning was removed when the résumé link moved to LinkedIn.

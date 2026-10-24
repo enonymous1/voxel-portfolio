@@ -20,12 +20,12 @@ assets) — grass, planks, log rings, bookshelf spines, terminal screens:
 
 ![Procedural tile sheet](docs/screenshots/tiles.png)
 
-> **Before you deploy:** the resume drawer links to `/resume.pdf`,
-> which is not in this repo yet — add your résumé to `static/` or
-> remove the link (see `DEPLOY.md`). And if you deploy to a GitHub
-> Pages *project* site (a subpath like `/voxel-portfolio/`), the
-> absolute `/models/*.glb` paths need `paths.base` support first —
-> a root domain or custom domain needs no change.
+> **Before you deploy:** the resume drawer links to your LinkedIn
+> profile (no PDF needed). If you deploy to a GitHub Pages *project*
+> site (a subpath like `/voxel-portfolio/`), the absolute
+> `/models/*.glb` paths need `paths.base` support first — a root
+> domain or custom domain needs no change. Hosting is deferred for
+> now, so this only matters when you pick a host.
 
 ## Run
 ```bash
@@ -35,8 +35,8 @@ npm run build   # static site in build/  (adapter-static)
 npm run check   # svelte-check + types
 ```
 
-**Deploying?** Read `DEPLOY.md` — pre-launch checklist (incl. the missing
-`static/resume.pdf` only you can add), shipped host configs
+**Deploying?** Read `DEPLOY.md` — pre-launch checklist (résumé links to
+LinkedIn for now, no PDF needed), shipped host configs
 (`static/_headers`, `static/_redirects`, `deploy/vercel.json`,
 `deploy/nginx-voxel-portfolio.conf`), a 2-minute post-deploy smoke test,
 and `npm run preflight`, which verifies the build output itself.
