@@ -1,0 +1,49 @@
+{
+  "dependencies": {
+    "@threlte/core": "^8.0.0",
+    "@threlte/extras": "^9.0.0",
+    "three": "^0.180.0",
+    "three-mesh-bvh": "^0.9.0"
+  },
+  "description": "Ultra-lightweight Minecraft-style voxel landing page portfolio \u2014 hybrid WebGL (Threlte/Three.js) + accessible DOM overlays. Gzipped main-path payload budget: 275 KB.",
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.42.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^26.6.5",
+    "@types/three": "^0.180.0",
+    "esbuild": "^0.28.2",
+    "gltfpack": "^1.3.0",
+    "jsdom": "^30.1.3",
+    "nipplejs": "^0.10.2",
+    "svelte": "^5.39.0",
+    "svelte-check": "^4.3.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "name": "voxel-portfolio",
+  "scripts": {
+    "analyze": "ANALYZE=1 vite build",
+    "build": "vite build",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "dev": "vite dev",
+    "format": "prettier --write .",
+    "lint": "prettier --check . && eslint .",
+    "preview": "vite preview",
+    "test:collision": "esbuild src/lib/three/collision.ts --bundle --format=esm --external:three --outfile=.test-build/collision.mjs && node tests/collision.test.mjs",
+    "build:models": "node scripts/build-models.mjs",
+    "test:gallery": "node tests/gallery.test.mjs",
+    "test:gallery-worker": "node tests/gallery-worker.test.mjs",
+    "test:a11y": "esbuild src/lib/a11y/focusTrap.ts --bundle --format=esm --outfile=.test-build/focusTrap.mjs && node tests/focus-trap.test.mjs",
+    "preflight": "node scripts/preflight.mjs"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "version": "0.1.0"
+}

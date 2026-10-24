@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:collision
+      - run: npm run test:gallery
+      - run: npm run test:a11y
+      - run: npm run build
+      # gallery-worker test runs against the built worker bundle, so it must follow build
+      - run: npm run test:gallery-worker
+      - run: npm run preflight
