@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SKY } from '../config';
 
 /**
  * DataArrayTexture (Texture2DArray) atlas
@@ -12,12 +13,18 @@ import * as THREE from 'three';
  * Tiles are generated procedurally here (16×16 canvas per layer) so
  * the scaffold ships with ZERO image assets / network weight. Replace
  * `paintTile()` with ImageBitmap loads to use real textures later —
- * keep the layer order in sync with TILE_LAYER in types.ts.
+ * keep the layer order in sync with TILE_LAYER in types.ts. That sync
+ * is the atlas's sharpest edge: a tile added to TILE_LAYER without a
+ * PALETTE entry (or vice versa) silently renders the wrong colour
+ * (the `?? '#888'` fallback hides it). Guarded by tests/atlas.test.mjs,
+ * which asserts PALETTE length == TILE_COUNT and every TILE_LAYER
+ * value in range — run it before touching either list.
  */
 export const TILE_SIZE = 16;
 export const TILE_COUNT = 16;
 
-const PALETTE = [
+/** Exported for tests/atlas.test.mjs: length must equal TILE_COUNT. */
+export const PALETTE = [
   '#6abe30', '#8a5a32', '#8a5a32', '#7d7d7d', '#b08d57', '#6b4a2b',
   '#a67c44', '#cfe8ef', '#7a4a21', '#9c6b30', '#5a5a5a', '#8b5a2b',
   '#2dd4bf', '#d6c48a', '#9ca3af', '#38bdf8'
@@ -181,9 +188,12 @@ export function createVoxelMaterial(atlas: THREE.DataArrayTexture) {
         vec4 tex = texture2D(atlas, vUvL);
         float ndl = max(dot(normalize(vNormal), sunDir), 0.0);
         float shade = 0.55 + 0.45 * ndl;
-        // Cheap distance fog — matches Scene background
+        // Cheap distance fog — colour is SKY.rgb from config.ts, so fog
+        // and the page background behind the canvas share one value
+        // (CSS can't import this module; +page's literal carries a
+        // comment pointing back here).
         float fogF = smoothstep(28.0, 60.0, length(vWorld.xz));
-        vec3 col = mix(tex.rgb * shade, vec3(0.53, 0.81, 0.92), fogF * 0.55);
+        vec3 col = mix(tex.rgb * shade, vec3(${SKY.rgb[0]}, ${SKY.rgb[1]}, ${SKY.rgb[2]}), fogF * 0.55);
         gl_FragColor = vec4(col, tex.a);
       }`
   });

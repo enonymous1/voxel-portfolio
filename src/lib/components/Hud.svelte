@@ -1,5 +1,10 @@
 <script lang="ts">
   import { portfolioState } from '../state.svelte';
+  // External links have ONE home (content/portfolio.ts). The HUD used to
+  // hardcode its own GitHub anchor, so the publish fix to the content
+  // file left a dead github.com/ link live in the menu — same link, two
+  // copies, one of them wrong. Never add a second copy of a URL.
+  import { externalLinks } from '../content/portfolio';
   const zoneNames = { atrium: 'Spawn Atrium', workshop: 'Projects Workshop', library: 'Archived Library', gallery: 'Interests Gallery', signposts: 'Links Gate' } as const;
 </script>
 
@@ -10,8 +15,9 @@
     <button data-focus-fallback onclick={() => portfolioState.openResume()}>About / Resume</button>
     <button onclick={() => portfolioState.openArchive()}>Archive</button>
     <button onclick={() => portfolioState.openHelp()}>Help (?)</button>
-    <a href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-    <a href="https://whenwhere.biz" target="_blank" rel="noopener noreferrer">WhenWhere ↗</a>
+    {#each externalLinks as link}
+      <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label} ↗</a>
+    {/each}
   </nav>
   <div class="zone" aria-live="polite">{zoneNames[portfolioState.currentZone]}</div>
 </div>

@@ -1,10 +1,9 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [sveltekit()],
   resolve: {
     alias: [
       // Rollup otherwise bundles the *unminified* three.module.js (~876 KB chunk).
@@ -29,11 +28,13 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    // Payload budget guardrail: warn early if a chunk creeps up.
-    // Ceiling re-baselined 2026-10-22 when BVH was kept by decision:
-    // measured total is ~267 KB gz for all JS+CSS — 275 KB is the
-    // regression ceiling, not a target. Content lives in DOM, not textures.
-    chunkSizeWarningLimit: 275
+    // NOTE on units: this limit is per-chunk UNCOMPRESSED kilobytes, not
+    // gz — the old value of 275 made Vite warn on every healthy build
+    // (the 3D chunk is ~784 KB raw, ~262 KB gz total with everything
+    // else). The gz ceiling lives where it can be measured: preflight
+    // enforces 275 KB gz on the real build output. This limit only
+    // guards against the 3D chunk roughly doubling.
+    chunkSizeWarningLimit: 900
     // Note: SvelteKit controls chunking; the 3D code is split by the
     // dynamic import of ThreeStage in +page.svelte, not manualChunks.
   },

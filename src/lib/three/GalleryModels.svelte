@@ -3,6 +3,7 @@
   import * as THREE from 'three';
   import { onMount, onDestroy } from 'svelte';
   import { galleryItems } from '../content/portfolio';
+  import { galleryPedestal } from './world';
   import type { MeshPayload } from '../workers/galleryWorker';
 
   /**
@@ -15,11 +16,19 @@
    * Picking stays on the voxel pedestals (PlayerController) — these
    * meshes are display-only, so they need no BVH of their own.
    */
-  const PEDESTALS: Record<string, { pos: [number, number, number]; placeholder: string }> = {
-    '3d-printing': { pos: [28.5, 2, 8.5], placeholder: '#f59e0b' },
-    homelab: { pos: [28.5, 2, 14.5], placeholder: '#38bdf8' },
-    dice: { pos: [28.5, 2, 20.5], placeholder: '#a78bfa' }
+  // Positions come from the world registry (galleryPedestal) — the old
+  // table duplicated the pedestal coordinates a second time, so moving
+  // a pedestal in world.ts silently left its model floating elsewhere.
+  // Only the placeholder colours are presentation-owned here.
+  const PLACEHOLDERS: Record<string, string> = {
+    '3d-printing': '#f59e0b', homelab: '#38bdf8', dice: '#a78bfa'
   };
+  const PEDESTALS: Record<string, { pos: [number, number, number]; placeholder: string }> = Object.fromEntries(
+    galleryItems.map((item) => {
+      const pos = galleryPedestal(item.id);
+      return [item.id, pos ? { pos, placeholder: PLACEHOLDERS[item.id] ?? '#fff' } : undefined];
+    }).filter(([, v]) => v !== undefined)
+  ) as Record<string, { pos: [number, number, number]; placeholder: string }>;
 
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.08 });
   let groups = $state<Record<string, THREE.Group | undefined>>({});
@@ -67,6 +76,7 @@
   }
 
   onMount(() => {
+    reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     worker = new Worker(new URL('../workers/galleryWorker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = (e: MessageEvent) => {
       if (e.data.type === 'model') buildFromPayloads(e.data.id, e.data.meshes as MeshPayload[]);
@@ -87,7 +97,6 @@
 
   // Respect prefers-reduced-motion: no idle rotation for those users
   let reducedMotion = false;
-  onMount(() => { reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; });
 
   useTask((delta) => {
     if (reducedMotion) return;

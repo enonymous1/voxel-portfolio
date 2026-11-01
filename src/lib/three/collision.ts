@@ -35,6 +35,24 @@ export const PLAYER = {
   snapDistance: 0.14 // ground snap when walking down small drops
 } as const;
 
+/**
+ * Height above the feet at which downward rays start. Must sit inside
+ * the capsule's vertical span (above ground when standing, below the
+ * crown) so the ray origin never starts inside a floor block: standing
+ * on ground y, the ray travels 0.55 + snapDistance down and finds the
+ * floor at distance 0.55. Used by ground snap and step-up ledge rays.
+ */
+const RAY_ORIGIN_HEIGHT = 0.55;
+/** A move counts as horizontally blocked if <60% of it was achieved */
+const BLOCKED_RATIO = 0.6;
+/** Push-direction Y above this counts as ground contact, below its
+ *  negative as ceiling contact. A different 0.55 from RAY_ORIGIN_HEIGHT
+ *  (this one is a direction cosine, ~56 degrees from horizontal) — hence
+ *  its own name rather than reusing that constant. */
+const CONTACT_NORMAL_Y = 0.55;
+/** Penetration-resolution passes per resolve (canonical 2-3; see header) */
+const MAX_PASSES = 3;
+
 export interface CollisionWorld {
   tree: MeshBVH;
   /** Ground-top Y of the first surface below `origin` within maxDist, else null */
@@ -55,6 +73,9 @@ const _triPoint = new THREE.Vector3();
 const _capPoint = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 
+/** Capsule segment for a player standing at `feet`: the segment runs
+ *  from radius above the feet to radius below the crown, so the capsule's
+ *  spherical caps cover feet and crown exactly. Writes into `out` (scratch). */
 function segmentFor(feet: THREE.Vector3, height: number, radius: number, out: THREE.Line3) {
   out.start.set(feet.x, feet.y + radius, feet.z);
   out.end.set(feet.x, feet.y + height - radius, feet.z);
@@ -74,7 +95,7 @@ export function resolveCapsule(
   let grounded = false;
   let hitCeiling = false;
 
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
     segmentFor(pos, height, radius, _seg);
     _box.makeEmpty();
     _box.expandByPoint(_seg.start);
@@ -96,8 +117,8 @@ export function resolveCapsule(
         const depth = radius - dist;
         _seg.start.addScaledVector(_dir, depth);
         _seg.end.addScaledVector(_dir, depth);
-        if (_dir.y > 0.55) grounded = true;
-        if (_dir.y < -0.55) hitCeiling = true;
+        if (_dir.y > CONTACT_NORMAL_Y) grounded = true;
+        if (_dir.y < -CONTACT_NORMAL_Y) hitCeiling = true;
         if (depth > maxPush) maxPush = depth;
       }
     });
@@ -156,8 +177,8 @@ function moveOnce(
   // Ground snap: small drops (walking off a 1-block edge starts a fall
   // of one frame's gravity step) shouldn't read as airborne.
   if (!grounded && delta.y <= 0.001) {
-    const origin = new THREE.Vector3(pos.x, pos.y + 0.55, pos.z);
-    const groundY = world.raycastDown(origin, 0.55 + PLAYER.snapDistance);
+    const origin = new THREE.Vector3(pos.x, pos.y + RAY_ORIGIN_HEIGHT, pos.z);
+    const groundY = world.raycastDown(origin, RAY_ORIGIN_HEIGHT + PLAYER.snapDistance);
     if (groundY !== null && pos.y - groundY <= PLAYER.snapDistance && pos.y >= groundY - 1e-4) {
       pos.y = groundY;
       grounded = true;
@@ -166,7 +187,7 @@ function moveOnce(
 
   const desiredH = Math.hypot(delta.x, delta.z);
   const achievedH = Math.hypot(pos.x - feet.x, pos.z - feet.z);
-  let blockedHorizontally = desiredH > 1e-4 && achievedH < desiredH * 0.6;
+  let blockedHorizontally = desiredH > 1e-4 && achievedH < desiredH * BLOCKED_RATIO;
 
   // Step-up: grounded + blocked -> lift, move at lifted height, settle.
   // (Lifting at the blocked spot alone fails: the capsule centre is still
@@ -187,7 +208,7 @@ function moveOnce(
         const inRange = (y: number | null): y is number =>
           y !== null && y > feet.y + 0.05 && y <= feet.y + PLAYER.stepHeight + 0.06;
         const rayFrom = (p: THREE.Vector3) =>
-          world.raycastDown(new THREE.Vector3(p.x, p.y + 0.55, p.z), 0.55 + PLAYER.stepHeight + 0.08);
+          world.raycastDown(new THREE.Vector3(p.x, p.y + RAY_ORIGIN_HEIGHT, p.z), RAY_ORIGIN_HEIGHT + PLAYER.stepHeight + 0.08);
         const ledgeHere = rayFrom(moved.feet);
         if (inRange(ledgeHere)) {
           // Centre is over the ledge: settle straight onto it
@@ -213,7 +234,7 @@ function moveOnce(
           }
         }
         blockedHorizontally =
-          desiredH > 1e-4 && Math.hypot(pos.x - feet.x, pos.z - feet.z) < desiredH * 0.6;
+          desiredH > 1e-4 && Math.hypot(pos.x - feet.x, pos.z - feet.z) < desiredH * BLOCKED_RATIO;
       }
     }
   }

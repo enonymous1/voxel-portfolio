@@ -5,6 +5,7 @@
   import { portfolioState } from '../state.svelte';
   import { INTERACTIVES, keyOf, zoneAt } from './world';
   import { movePlayer, PLAYER, type CollisionWorld } from './collision';
+  import { SPAWN_POSITION, SPAWN_YAW, SPAWN_PITCH, MOVEMENT } from '../config';
   import type { MeshBVH } from 'three-mesh-bvh/src/core/MeshBVH.js';
 
   /**
@@ -17,18 +18,18 @@
   let { worldMesh }: { worldMesh: THREE.Mesh | undefined } = $props();
   const { camera, renderer } = useThrelte();
 
-  const SPEED = 5.2, REACH = 6, GRAVITY = 22, JUMP_VEL = 7.4;
-  let feet = new THREE.Vector3(16, 1, 24); // spawn in Atrium, on the ground slab (top y=1)
+  // Movement tuning + spawn live in config.ts (single source of truth).
+  let feet = new THREE.Vector3(SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z);
   let velY = 0;
   let grounded = true;
   // yaw 0 = facing -Z (north): dais + resume terminals centre-frame at spawn,
   // workshop row beyond. (Was Math.PI — facing the south gate, i.e. away from
   // all content; reported 2026-10-23 as landing in an empty-looking world.)
-  let yaw = 0, pitch = -0.08;
+  let yaw = SPAWN_YAW, pitch = SPAWN_PITCH;
   const keys = new Set<string>();
 
   // Centre-screen picking ray (BVH-accelerated via the mesh's raycast override)
-  const pickRay = new THREE.Raycaster(); pickRay.far = REACH;
+  const pickRay = new THREE.Raycaster(); pickRay.far = MOVEMENT.reach;
   (pickRay as unknown as { firstHitOnly: boolean }).firstHitOnly = true;
   const centre = new THREE.Vector2(0, 0);
 
@@ -106,12 +107,12 @@
     const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - portfolioState.moveVector.z;
     const str = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + portfolioState.moveVector.x;
     const sin = Math.sin(yaw), cos = Math.cos(yaw);
-    const wishX = (str * cos - fwd * sin) * SPEED * d;
-    const wishZ = (-fwd * cos - str * sin) * SPEED * d;
+    const wishX = (str * cos - fwd * sin) * MOVEMENT.speed * d;
+    const wishZ = (-fwd * cos - str * sin) * MOVEMENT.speed * d;
 
-    if (portfolioState.jumpQueued && grounded) velY = JUMP_VEL;
+    if (portfolioState.jumpQueued && grounded) velY = MOVEMENT.jumpVelocity;
     portfolioState.jumpQueued = false;
-    velY -= GRAVITY * d;
+    velY -= MOVEMENT.gravity * d;
 
     const world = collisionWorld();
     if (world) {
@@ -122,7 +123,7 @@
       if (grounded && velY < 0) velY = 0;
       if (res.hitCeiling && velY > 0) velY = 0;
       // Fell out of the world somehow (mesh rebuilt mid-step, etc.) — respawn in the Atrium
-      if (feet.y < -10) { feet.set(16, 1, 24); velY = 0; }
+      if (feet.y < -10) { feet.set(SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z); velY = 0; }
     } else {
       // Pre-world fallback: flat ground at y=1, fenced to the island
       feet.x = THREE.MathUtils.clamp(feet.x + wishX, 1.2, 30.8);

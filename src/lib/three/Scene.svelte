@@ -1,5 +1,7 @@
 <script lang="ts">
   import { T } from '@threlte/core';
+  import { SPAWN_POSITION } from '../config';
+  import { PLAYER } from './collision';
   // Default import from '@threlte/extras' — vite.config.ts aliases that exact
   // specifier to ONLY the HTML component file. The extras barrel re-exports
   // every component (three-stdlib, instanced-sprite-mesh, ~35 KB gz) and its
@@ -23,7 +25,7 @@
   let worldMesh = $state<THREE.Mesh | undefined>(undefined);
 </script>
 
-<T.PerspectiveCamera makeDefault fov={72} near={0.1} far={120} position={[16, 3.6, 24]} />
+<T.PerspectiveCamera makeDefault fov={72} near={0.1} far={120} position={[SPAWN_POSITION.x, SPAWN_POSITION.y + PLAYER.eye, SPAWN_POSITION.z]} />
 <T.AmbientLight intensity={0.9} />
 <T.DirectionalLight position={[18, 30, 12]} intensity={1.6} />
 

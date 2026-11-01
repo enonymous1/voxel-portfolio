@@ -31,7 +31,14 @@ class PortfolioState {
   currentZone = $state<ZoneId>('atrium');
   /** True while a chunk mesh rebuild is in flight in the worker */
   worldReady = $state(false);
-  worldProgress = $state(0); // 0..1, worker-reported
+  /**
+   * Non-null when the world failed to build (worker error, or the worker
+   * itself failed to start). +page renders this with a Retry button
+   * instead of the loading spinner — before this field, a worker failure
+   * left "Building the world…" on screen forever with only a console
+   * error. Cleared on the next build attempt.
+   */
+  worldError = $state<string | null>(null);
   /** Incremented on webglcontextrestored — VoxelWorld watches it and re-meshes */
   worldRebuildNonce = $state(0);
 
@@ -57,34 +64,40 @@ class PortfolioState {
   hoverLabel = $derived(this.hovered?.label ?? null);
 
   // --- Actions: panels --------------------------------------------------
+  /** Open the resume drawer (and release pointer lock so the mouse works). */
   openResume() {
     this.activePanel = 'resume';
     this.#exitLockIfNeeded();
   }
 
+  /** Open a project dialog for a workshop workstation id. */
   openProject(projectId: string) {
     this.selectedProjectId = projectId;
     this.activePanel = 'project';
     this.#exitLockIfNeeded();
   }
 
+  /** Open the archived-projects library list. */
   openArchive() {
     this.activePanel = 'archive';
     this.#exitLockIfNeeded();
   }
 
+  /** Open a gallery dialog for a pedestal model id. */
   openGallery(galleryId: string) {
     this.selectedGalleryId = galleryId;
     this.activePanel = 'gallery';
     this.#exitLockIfNeeded();
   }
 
+  /** Open Help, remembering the panel to return to on Esc. */
   openHelp() {
     if (this.activePanel !== 'help') this.#panelBeforeHelp = this.activePanel;
     this.activePanel = 'help';
     this.#exitLockIfNeeded();
   }
 
+  /** Close, or return from Help to the panel it interrupted. */
   closePanel() {
     if (this.activePanel === 'help' && this.#panelBeforeHelp !== 'none') {
       this.activePanel = this.#panelBeforeHelp;

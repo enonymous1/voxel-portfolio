@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte } from '@threlte/core';
+  import { T } from '@threlte/core';
   import * as THREE from 'three';
   // Subpath imports, NOT the barrel: 'three-mesh-bvh' index re-exports
   // ~63 KB gz of unrelated utils/workers. Core-only keeps BVH at a few KB.
@@ -25,24 +25,21 @@
   let material = $state<THREE.ShaderMaterial | null>(null);
   let lastNonce = 0;
 
-  const { renderer } = useThrelte();
-
-  function requestBuild() {
-    if (!worker) return;
-    portfolioState.worldReady = false;
-    const voxels = buildVoxels();
-    // Transfer a copy of the buffer — buildVoxels() result is ours to give away.
-    worker.postMessage(
-      { type: 'build', chunkId: 'main', size: WORLD_SIZE, origin: [0, 0, 0], voxels: voxels.buffer },
-      [voxels.buffer]
-    );
-  }
-
-  onMount(() => {
-    material = createVoxelMaterial(createAtlasTexture());
+  /**
+   * Create the worker (lazily, so a failed start is retryable: the
+   * +page Retry button bumps worldRebuildNonce, which re-enters
+   * requestBuild, which recreates the worker instead of no-op'ing
+   * on a null handle). Two failure channels, both surfaced in state:
+   * a 'error' message from inside the worker, and worker.onerror for
+   * a worker that never started (bad URL, CSP, module 404).
+   */
+  function createWorker() {
     worker = new Worker(new URL('../workers/chunkWorker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = (e: MessageEvent) => {
-      if (e.data.type === 'error') { console.error('[chunkWorker]', e.data.message); return; }
+      if (e.data.type === 'error') {
+        portfolioState.worldError = `World build failed: ${e.data.message}`;
+        return;
+      }
       if (e.data.type !== 'mesh') return;
       const { position, normal, uvLayer, index } = e.data as {
         position: Float32Array; normal: Float32Array; uvLayer: Float32Array; index: Uint32Array;
@@ -58,8 +55,37 @@
       geometry?.dispose();
       geometry = geo;
       portfolioState.worldReady = true;
-      portfolioState.worldProgress = 1;
+      portfolioState.worldError = null;
     };
+    worker.onerror = () => {
+      portfolioState.worldError = 'The world builder failed to start. Check the console, then retry.';
+    };
+  }
+
+  function requestBuild() {
+    if (!worker) {
+      try { createWorker(); }
+      catch (err) {
+        portfolioState.worldError = `The world builder failed to start: ${err instanceof Error ? err.message : String(err)}`;
+        return;
+      }
+    }
+    // TS can't narrow `worker` through the createWorker() call above,
+    // so bind it locally (and bail if creation somehow left it null).
+    const w = worker;
+    if (!w) return;
+    portfolioState.worldReady = false;
+    portfolioState.worldError = null;
+    const voxels = buildVoxels();
+    // Transfer a copy of the buffer — buildVoxels() result is ours to give away.
+    w.postMessage(
+      { type: 'build', chunkId: 'main', size: WORLD_SIZE, origin: [0, 0, 0], voxels: voxels.buffer },
+      [voxels.buffer]
+    );
+  }
+
+  onMount(() => {
+    material = createVoxelMaterial(createAtlasTexture());
     requestBuild();
   });
 
@@ -70,7 +96,6 @@
   });
 
   onDestroy(() => { worker?.terminate(); geometry?.dispose(); material?.dispose(); });
-  void renderer;
 </script>
 
 {#if geometry && material}

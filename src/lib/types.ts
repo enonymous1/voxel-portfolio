@@ -67,6 +67,26 @@ export const TILE_LAYER: Record<string, number> = {
   podium: 12, sign: 13, pedestal: 14, workstation: 15
 };
 
+/**
+ * Voxel face table — the mesher's single source of truth (used by
+ * chunkWorker.ts; previously a private copy lived there).
+ *
+ * `tileFace` indexes tileFor()'s face order [+x, -x, +y, -y, +z, -z].
+ * CORRECTION 2026-10-31: the old table had ±x and ±z swapped (-x→0,
+ * +x→1, -z→4, +z→5). Invisible until now because every current block
+ * uses symmetric tiles on opposite faces — but any future directional
+ * tile (a sign face, a furnace front) would have rendered on the
+ * wrong side. Guarded by tests/atlas.test.mjs.
+ */
+export const VOXEL_FACES: { dir: [number, number, number]; tileFace: 0|1|2|3|4|5 }[] = [
+  { dir: [-1, 0, 0], tileFace: 1 }, // -x
+  { dir: [ 1, 0, 0], tileFace: 0 }, // +x
+  { dir: [ 0,-1, 0], tileFace: 3 }, // -y (bottom)
+  { dir: [ 0, 1, 0], tileFace: 2 }, // +y (top)
+  { dir: [ 0, 0,-1], tileFace: 5 }, // -z
+  { dir: [ 0, 0, 1], tileFace: 4 }  // +z
+];
+
 /** Face -> tile lookup per block. Order: [+x,-x,+y,-y,+z,-z] */
 export function tileFor(block: BlockId, face: 0|1|2|3|4|5): number {
   switch (block) {

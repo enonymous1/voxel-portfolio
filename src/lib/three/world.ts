@@ -8,6 +8,12 @@ import type { HoveredBlock } from '../types';
  */
 export const WORLD_SIZE: [number, number, number] = [32, 24, 32];
 
+/**
+ * Voxel layout, stored flat. Index formula `x + sx * (z + sz * y)`:
+ * x runs fastest, then z, then y — the same order chunkWorker's
+ * per-axis sweeps assume, so keep both in sync if this ever changes.
+ * Out-of-bounds writes are silently dropped (lets boxes overhang edges).
+ */
 export function buildVoxels(): Uint8Array {
   const [sx, sy, sz] = WORLD_SIZE;
   const v = new Uint8Array(sx * sy * sz);
@@ -46,14 +52,43 @@ export const INTERACTIVES = new Map<string, HoveredBlock>([
   ['14,2,4',  { id: 'workshop:ss-sms-br', zoneId: 'workshop', label: 'ss-sms-br Viewer', position: [14, 2, 4], panel: 'project', payloadId: 'ss-sms-br' }],
   ['19,2,4',  { id: 'workshop:ss-prediction', zoneId: 'workshop', label: 'Prediction-Market Engine', position: [19, 2, 4], panel: 'project', payloadId: 'ss-prediction' }],
   ['24,2,4',  { id: 'workshop:whenwhere', zoneId: 'workshop', label: 'WhenWhere.biz', position: [24, 2, 4], panel: 'project', payloadId: 'whenwhere' }],
-  ['2,1,9',   { id: 'library:archive', zoneId: 'library', label: 'Archived Projects — click for list', position: [2, 1, 9], panel: 'archive' }],
-  ['3,1,10',  { id: 'library:chest', zoneId: 'library', label: 'Archive Chest', position: [3, 1, 10], panel: 'archive' }],
+  ['2,1,8',   { id: 'library:archive', zoneId: 'library', label: 'Archived Projects — click for list', position: [2, 1, 8], panel: 'archive' }],
+  ['3,1,9',   { id: 'library:chest', zoneId: 'library', label: 'Archive Chest', position: [3, 1, 9], panel: 'archive' }],
   ['28,1,8',  { id: 'gallery:3d-printing', zoneId: 'gallery', label: '3D Printing', position: [28, 1, 8], panel: 'gallery', payloadId: '3d-printing' }],
   ['28,1,14', { id: 'gallery:homelab', zoneId: 'gallery', label: 'Homelab', position: [28, 1, 14], panel: 'gallery', payloadId: 'homelab' }],
   ['28,1,20', { id: 'gallery:dice', zoneId: 'gallery', label: 'Tabletop Dice', position: [28, 1, 20], panel: 'gallery', payloadId: 'dice' }]
 ]);
 
 export const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
+
+/**
+ * Gallery model anchor for a gallery INTERACTIVES entry: the pedestal
+ * block's centre, one block above its top (models sit on y=2 pedestals).
+ * GalleryModels derives this from the registry instead of hardcoding
+ * its own copy of the pedestal positions — move a pedestal here and
+ * the model follows. Returns undefined for non-gallery ids.
+ */
+export function galleryPedestal(id: string): [number, number, number] | undefined {
+  const entry = [...INTERACTIVES.values()].find((e) => e.id === `gallery:${id}`);
+  if (!entry) return undefined;
+  const [x, y, z] = entry.position;
+  return [x + 0.5, y + 1, z + 0.5];
+}
+
+/**
+ * Decorative instanced crates in the library aisle (LibraryInstances).
+ * These are NOT the voxel chest blocks (9 of those, at x=3, z odd) —
+ * an earlier comment claimed they were, which was wrong on both count
+ * and position. Crates sit in the aisle gaps between chest columns,
+ * one per second bookshelf row. The fifth crate used to sit at
+ * z=25.5 — inside the chest block at (3,1,25), i.e. invisible — and
+ * broke the every-4 rhythm; it now sits at 26.5 in open air.
+ * Interaction stays on the voxel chests. Kept here so the layout has
+ * exactly one home; the renderer only consumes the positions.
+ */
+export const LIBRARY_CRATE_POSITIONS: [number, number, number][] = [
+  [3.5, 1.35, 10.5], [3.5, 1.35, 14.5], [3.5, 1.35, 18.5], [3.5, 1.35, 22.5], [3.5, 1.35, 26.5]
+];
 
 /** Zone by position — cheap AABB checks, drives HUD label + ambient tweaks */
 export function zoneAt(x: number, z: number): HoveredBlock['zoneId'] {

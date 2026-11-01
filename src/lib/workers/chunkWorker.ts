@@ -25,7 +25,7 @@
  *   out: { type:'mesh', chunkId, position, normal, uvLayer, index, quadCount } (all transferred)
  *   out: { type:'error', chunkId, message }
  */
-import { tileFor, BLOCK } from '../types';
+import { tileFor, BLOCK, VOXEL_FACES } from '../types';
 
 export interface BuildRequest {
   type: 'build';
@@ -35,16 +35,9 @@ export interface BuildRequest {
   voxels: ArrayBuffer;
 }
 
-// Per-face data: normal dir, and the 4 corners as [axis, uAxis, vAxis] offsets
-// in {0,1} — expanded by w/h at emit time so greedy rects stay correct.
-const FACES: { dir: [number, number, number]; tileFace: 0|1|2|3|4|5 }[] = [
-  { dir: [-1, 0, 0], tileFace: 0 }, // -x
-  { dir: [ 1, 0, 0], tileFace: 1 }, // +x
-  { dir: [ 0,-1, 0], tileFace: 3 }, // -y (bottom)
-  { dir: [ 0, 1, 0], tileFace: 2 }, // +y (top)
-  { dir: [ 0, 0,-1], tileFace: 4 }, // -z
-  { dir: [ 0, 0, 1], tileFace: 5 }  // +z
-];
+// Face table lives in types.ts (VOXEL_FACES) so the mapping is
+// testable without loading a worker; see its correction note there.
+const FACES = VOXEL_FACES;
 
 const isOpaque = (b: number) => b !== 0 && b !== BLOCK.Glass;
 

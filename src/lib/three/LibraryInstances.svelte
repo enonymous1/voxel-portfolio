@@ -2,17 +2,19 @@
   import { T } from '@threlte/core';
   import * as THREE from 'three';
   import { onMount } from 'svelte';
+  import { LIBRARY_CRATE_POSITIONS } from './world';
 
   /**
-   * LibraryInstances — archive chests as ONE InstancedMesh draw call.
-   * Per spec: archived items must not each be a Mesh. Count = chests in
-   * world.ts library row. Interaction is still via the voxel chest blocks;
-   * this is purely the decorative instanced layer.
+   * LibraryInstances — aisle crates as ONE InstancedMesh draw call.
+   * Per spec: archived items must not each be a Mesh. Positions live in
+   * world.ts (LIBRARY_CRATE_POSITIONS) — an earlier version of this
+   * comment claimed these were the voxel chest blocks, which was wrong
+   * on count (5 crates vs 9 chests) and position (aisle gaps, not
+   * chest blocks). Interaction stays on the voxel blocks; this layer
+   * is purely decorative.
    */
   let mesh = $state<THREE.InstancedMesh | undefined>(undefined);
-  const positions: [number, number, number][] = [
-    [3.5, 1.35, 10.5], [3.5, 1.35, 14.5], [3.5, 1.35, 18.5], [3.5, 1.35, 22.5], [3.5, 1.35, 25.5]
-  ];
+  const positions = LIBRARY_CRATE_POSITIONS;
   onMount(() => {
     if (!mesh) return;
     const m = new THREE.Matrix4();

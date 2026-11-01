@@ -40,7 +40,15 @@
     {#if ThreeStage}<ThreeStage />{/if}
   </div>
 
-  {#if !portfolioState.worldReady}
+  {#if portfolioState.worldError}
+    <!-- Worker failure used to leave the spinner below on screen forever;
+         the error is now surfaced with a retry (rebuild nonce re-enters
+         VoxelWorld's lazy worker creation). -->
+    <div class="loading" role="alert">
+      <p>{portfolioState.worldError}</p>
+      <button onclick={() => { portfolioState.worldError = null; portfolioState.worldRebuildNonce++; }}>Retry building the world</button>
+    </div>
+  {:else if !portfolioState.worldReady}
     <div class="loading" role="status">{ThreeStage ? 'Building the world…' : 'Loading 3D…'}</div>
   {/if}
 
@@ -58,8 +66,13 @@
 </main>
 
 <style>
+  /* Sky behind the canvas — must match SKY.css in src/lib/config.ts
+     (the voxel shader's fog colour). CSS can't import that module,
+     so this literal is the one copy that can drift: change both. */
   .stage { position: fixed; inset: 0; overflow: hidden; background: #87ceeb; font-family: system-ui, sans-serif; }
   .canvas-wrap { position: absolute; inset: 0; z-index: 0; }
   .canvas-wrap :global(canvas) { display: block; width: 100%; height: 100%; touch-action: none; }
-  .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(15,23,42,.85); color: #fff; padding: .8rem 1.2rem; border-radius: 10px; z-index: 5; }
+  .loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(15,23,42,.85); color: #fff; padding: .8rem 1.2rem; border-radius: 10px; z-index: 5; text-align: center; }
+  .loading p { margin: 0 0 .6rem 0; }
+  .loading button { background: #f59e0b; color: #111827; border: 0; font-weight: 700; padding: .5rem 1rem; border-radius: 999px; cursor: pointer; }
 </style>
